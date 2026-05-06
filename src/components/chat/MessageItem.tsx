@@ -10,6 +10,8 @@ import { ChafaImage } from "../../ui/ChafaImage"
 import { useTheme } from "../../theme"
 import { useSkin } from "../../app/skin"
 import { mathify } from "../../utils/math-unicode"
+import { usePref } from "../../utils/preferences"
+import { TurnProcess } from "./TurnProcess"
 
 export type { Message }
 
@@ -191,6 +193,7 @@ const AssistantMessage = memo(({ message, streaming, prompt, onPick }: {
   const ctx = useTheme()
   const theme = ctx.theme
   const { agentName } = useSkin()
+  const inlineProcess = usePref("inlineProcess") ?? false
   const [hover, setHover] = useState(false)
   const click = useClick(onPick && (() => onPick(message)))
   const err = !!message.error
@@ -267,12 +270,13 @@ const AssistantMessage = memo(({ message, streaming, prompt, onPick }: {
       <Gutter color={err ? theme.error : theme.accent} side="right">
         <box height={1} flexDirection="row">
           <box flexGrow={1}><text fg={theme.textMuted}>{header}</text></box>
-          {trail.length ? (
+          {!inlineProcess && trail.length ? (
             <box><text fg={theme.textMuted}>
               {trunc(trail.map(p => p.type === "tool" ? p.name : "?").join(" · "), 40)}
             </text></box>
           ) : null}
         </box>
+        {inlineProcess ? <TurnProcess parts={message.parts} /> : null}
         {message.parts.map(part)}
         {diffs.map(t => <InlineDiff key={t.id || t.name} tool={t} />)}
         {err ? <ErrorBlock text={message.error!} /> : null}

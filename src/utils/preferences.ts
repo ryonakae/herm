@@ -38,6 +38,12 @@ interface TuiPreferences {
   animations?: boolean
   /** Thought-cloud tool trail verbosity */
   toolDetails?: DetailMode
+  /** Render thinking + tool calls inline in the transcript instead of
+   *  the ThoughtCloud dialog. When true, ThoughtCloud is suppressed and
+   *  each turn gets a collapsible `▸ N steps` summary above its body. */
+  inlineProcess?: boolean
+  /** Initial open state of the per-turn inline-process summary. */
+  inlineProcessDefaultOpen?: boolean
   /** User keybinding overrides (ActionId → chord string) */
   keys?: Record<string, string>
   /** Clock style for time-of-day formatters */

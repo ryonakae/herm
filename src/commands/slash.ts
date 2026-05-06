@@ -39,6 +39,7 @@ export const LOCAL_NAMES = new Set([
   // parity: session-mutating commands the slash-worker can't service
   "resume", "branch", "compress", "undo", "retry", "model", "quit",
   "copy", "paste", "image", "background", "voice", "mouse", "redraw", "queue",
+  "inline-process",
   // Ink-only UI toggles — local no-op with a note
   "compact", "setup",
 ])
@@ -69,6 +70,7 @@ export const LOCAL_COMMANDS: ReadonlyArray<SlashCommand> = [
   { name: "splash", description: "Show the launch splash",              category: "Client",  aliases: [], argsHint: "", subcommands: [], source: "local", target: "local" },
   { name: "goal",   description: "Set/control the session goal",        category: "Session", aliases: [], argsHint: "[text|done|pause|resume|clear|status]", subcommands: ["done", "pause", "resume", "clear", "status"], source: "local", target: "local" },
   { name: "skin",   description: "Switch Hermes skin (+ theme + eikon)", category: "Client",  aliases: [], argsHint: "[name]", subcommands: [...SKINS], source: "local", target: "local" },
+  { name: "inline-process", description: "Toggle inline thinking + tool display", category: "Client", aliases: [], argsHint: "[on|off]", subcommands: ["on", "off"], source: "local", target: "local" },
 ]
 
 /** Filter commands by prefix (text after `/`). Searches names + aliases. */

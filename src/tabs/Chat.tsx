@@ -3,6 +3,7 @@ import { MessageList } from "../components/chat/MessageList"
 import type { PromptWire } from "../components/chat/MessageItem"
 import { ThoughtCloud } from "../components/chat/ThoughtCloud"
 import { useTheme } from "../theme"
+import { usePref } from "../utils/preferences"
 import type { Message } from "../types/message"
 
 export const Chat = memo(({
@@ -29,6 +30,7 @@ export const Chat = memo(({
   onRewind?: (m: Message) => void
 }) => {
   const theme = useTheme().theme
+  const inlineProcess = usePref("inlineProcess") ?? false
   return (
     <box
       flexGrow={1}
@@ -37,7 +39,7 @@ export const Chat = memo(({
       backgroundColor={theme.background}
     >
       <MessageList messages={messages} streaming={streaming} prompt={prompt} onRewind={onRewind} onPick={onPick} />
-      {cloud ? (
+      {cloud && !inlineProcess ? (
         <box position="absolute" top={0} left={0} right={0} zIndex={1}>
           <ThoughtCloud
             height={cloudH} messages={messages}
