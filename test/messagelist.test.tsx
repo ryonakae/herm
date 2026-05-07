@@ -69,6 +69,27 @@ describe("MessageList", () => {
     expect(f).not.toContain("$ bun run build")
     t.destroy()
   })
+
+  test("pads user and assistant content horizontally inside the gutter", async () => {
+    const t: Harness = await mountNode(
+      <box flexDirection="column" width="100%" height="100%">
+        <MessageList messages={turn} streaming={false} />
+      </box>,
+      { width: 80, height: 30 },
+    )
+    await until(t, () => t.frame().includes("On it."))
+    const rows = t.frame().split("\n")
+    const user = rows.find(l => l.includes("run the build"))!
+    const head = rows.find(l => l.includes("Hermes · 12→34 tok · 250ms"))!
+    const body = rows.find(l => l.includes("On it."))!
+
+    expect(user.indexOf("run the build")).toBe(user.indexOf("│") + 3)
+    expect(head.indexOf("Hermes · 12→34 tok · 250ms")).toBe(1)
+    expect(head.lastIndexOf("│") - (head.indexOf("read_file") + "read_file".length)).toBeGreaterThanOrEqual(1)
+    expect(body.indexOf("On it.")).toBe(1)
+    expect(body.lastIndexOf("│") - (body.indexOf("On it.") + "On it.".length)).toBeGreaterThanOrEqual(1)
+    t.destroy()
+  })
 })
 
 describe("tool/inline", () => {

@@ -115,7 +115,7 @@ const Gutter = memo(({ color, glyph = "│", side = "left", children }: {
   return (
     <box flexDirection="row">
       {side === "left" ? bar : null}
-      <box flexDirection="column" flexGrow={1} flexShrink={1}>
+      <box flexDirection="column" flexGrow={1} flexShrink={1} paddingX={1}>
         {children}
       </box>
       {side === "right" ? bar : null}
