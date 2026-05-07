@@ -13,15 +13,16 @@ const turn: Message[] = [
     id: "a1", role: "assistant", timestamp: 0, model: "test-model",
     parts: [
       { type: "thinking", content: "thinking out loud about the build", streaming: false, key: "th-1" },
+      { type: "text", content: "First message.\n", streaming: false },
       {
         type: "tool", id: "t1", name: "terminal", args: "",
         preview: "bun run build", status: "done", duration: 87,
       },
-      { type: "thinking", content: "now reviewing output", streaming: false, key: "th-2" },
       {
         type: "tool", id: "t2", name: "read_file", args: "",
         preview: "src/index.tsx", status: "done", duration: 12,
       },
+      { type: "thinking", content: "now reviewing output", streaming: false, key: "th-2" },
       { type: "text", content: "Build is green.", streaming: false },
     ],
   },
@@ -48,7 +49,7 @@ describe("MessageList / thoughtDisplay", () => {
     t.destroy()
   })
 
-  test("on, closed by default: summary line replaces trail; bodies hidden", async () => {
+  test("on, closed by default: inline runs stay chronological and bodies hidden", async () => {
     preferences.set("thoughtDisplay", "inline")
     const t = await mountNode(
       <box flexDirection="column" width="100%" height="100%">
@@ -58,17 +59,25 @@ describe("MessageList / thoughtDisplay", () => {
     )
     await until(t, () => t.frame().includes("Build is green."))
     const f = t.frame()
-    expect(f).toContain("▸ 2 reasoning · 2 tools")
+    expect(f).toContain("▸ 1 reasoning")
+    expect(f).toContain("▸ 2 tools")
     const rows = f.split("\n")
-    const idx = rows.findIndex(l => l.includes("▸ 2 reasoning · 2 tools"))
-    expect(rows[idx + 1]?.trim()).toBe("│")
-    expect(rows[idx + 2]).toContain("Build is green.")
+    const first = rows.findIndex(l => l.includes("▸ 1 reasoning"))
+    const msg = rows.findIndex(l => l.includes("First message."))
+    const tool = rows.findIndex((l, i) => i > msg && l.includes("▸ 2 tools"))
+    const next = rows.findIndex((l, i) => i > tool && l.includes("▸ 1 reasoning"))
+    const text = rows.findIndex(l => l.includes("Build is green."))
+    expect(first).toBeGreaterThan(-1)
+    expect(msg).toBeGreaterThan(first)
+    expect(tool).toBeGreaterThan(msg)
+    expect(next).toBeGreaterThan(tool)
+    expect(text).toBeGreaterThan(next)
     expect(f).not.toContain("terminal · read_file") // trail badge suppressed
     expect(f).not.toContain("thinking out loud")    // closed
     t.destroy()
   })
 
-  test("on with defaultOpen: summary opened; thinking + tool rows visible", async () => {
+  test("on with defaultOpen: each chronological run opens independently", async () => {
     preferences.set("thoughtDisplay", "inline")
     preferences.set("thoughtInlineDefaultOpen", true)
     const t = await mountNode(
@@ -79,7 +88,8 @@ describe("MessageList / thoughtDisplay", () => {
     )
     await until(t, () => t.frame().includes("Build is green."))
     const f = t.frame()
-    expect(f).toContain("▾ 2 reasoning · 2 tools")
+    expect(f).toContain("▾ 1 reasoning")
+    expect(f).toContain("▾ 2 tools")
     expect(f).toContain("thinking out loud")
     expect(f).toContain("now reviewing output")
     expect(f).toContain("$ bun run build")

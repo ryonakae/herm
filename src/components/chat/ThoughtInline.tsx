@@ -1,11 +1,9 @@
-// ThoughtInline summary — collapsed view of an assistant turn's
-// reasoning + tool trail. Lives at the top of the MessageItem body when
-// the user opts into `thoughtDisplay: "inline"`. ThoughtCloud is suppressed in
-// that mode so this is the only surface for thinking/tool parts.
+// ThoughtInline summary — collapsed view of one chronological run of
+// reasoning or tool parts. MessageItem places these runs between normal
+// transcript text so inline thought follows the actual turn order.
 //
-// Closed: a one-liner pill (`▸ 2 reasoning · 3 tools`).
-// Open:   the same flat list ThoughtCloud renders — thinking lines
-//         spilled inline, each tool through the shared <Tool> dispatch.
+// Closed: a one-liner pill (`▸ 2 reasoning` / `▸ 3 tools`).
+// Open:   thinking lines or tool rows through the shared <Tool> dispatch.
 
 import { memo, useState } from "react"
 import type { MouseEvent } from "@opentui/core"

@@ -208,17 +208,127 @@ function flatten(text: TranscriptMessage["text"]): string {
   return out.join("\n")
 }
 
+function rowText(r: TranscriptMessage): string {
+  return flatten(r.text ?? r.content)
+}
+
 export function transcriptToMessages(rows: TranscriptMessage[]): Message[] {
-  return rows
-    .filter(r => r.role === "user" || r.role === "assistant")
-    .map(r => ({ role: r.role, content: flatten(r.text) }))
-    .filter(r => r.content)
-    .map(r => ({
-      id: mid(),
-      role: r.role as "user" | "assistant",
-      parts: [{ type: "text" as const, content: r.content, streaming: false }],
-      timestamp: Date.now() / 1000,
-    }))
+  const out: Message[] = []
+  let cur: Message | null = null
+  const flush = () => {
+    if (cur && cur.parts.length) out.push(cur)
+    cur = null
+  }
+  const open = () => {
+    cur ??= assistant([])
+    return cur
+  }
+
+  for (const r of rows) {
+    if (r.role === "user") {
+      flush()
+      const content = rowText(r)
+      if (content) out.push({
+        id: mid(), role: "user",
+        parts: [{ type: "text", content, streaming: false }],
+        timestamp: Date.now() / 1000,
+      })
+      continue
+    }
+
+    if (r.role === "assistant") {
+      const parts = assistantParts(r)
+      if (!parts.length) continue
+      open().parts.push(...parts)
+      continue
+    }
+
+    if (r.role === "tool") {
+      const m = open()
+      const idx = toolIndex(m.parts, r.tool_call_id)
+      if (idx < 0) continue
+      const p = m.parts[idx]
+      if (p.type !== "tool") continue
+      m.parts[idx] = {
+        ...p,
+        status: "done",
+        result: rowText(r) || r.context,
+      }
+    }
+  }
+
+  flush()
+  return out
+}
+
+type Call = {
+  id?: string
+  call_id?: string
+  name?: string
+  function?: { name?: string; arguments?: string }
+}
+
+function assistantParts(r: TranscriptMessage): Part[] {
+  const parts: Part[] = []
+  const thought = r.reasoning_content || r.reasoning
+  if (thought) parts.push({ type: "thinking", key: pid(), content: thought, streaming: false })
+  for (const c of calls(r.tool_calls)) parts.push(toolPart(c))
+  const content = rowText(r)
+  if (content) parts.push({ type: "text", key: pid(), content, streaming: false })
+  return parts
+}
+
+function calls(raw?: string): Call[] {
+  if (!raw) return []
+  try {
+    const data = JSON.parse(raw) as unknown
+    return Array.isArray(data) ? data.filter(isCall) : []
+  } catch { return [] }
+}
+
+function isCall(v: unknown): v is Call {
+  return !!v && typeof v === "object"
+}
+
+function toolPart(c: Call): ToolPart {
+  const name = c.function?.name || c.name || "tool"
+  const args = c.function?.arguments || ""
+  return {
+    type: "tool",
+    id: c.id || c.call_id || pid(),
+    name,
+    args,
+    status: "running",
+    preview: preview(args),
+  }
+}
+
+function preview(args: string): string | undefined {
+  if (!args) return undefined
+  try {
+    const data = JSON.parse(args) as unknown
+    if (!data || typeof data !== "object" || Array.isArray(data)) return shortArg(args)
+    const obj = data as Record<string, unknown>
+    for (const k of ["command", "path", "query", "pattern", "url", "prompt", "text"])
+      if (typeof obj[k] === "string" && obj[k]) return shortArg(obj[k])
+    const hit = Object.values(obj).find(v => typeof v === "string" && v)
+    return typeof hit === "string" ? shortArg(hit) : shortArg(args)
+  } catch { return shortArg(args) }
+}
+
+function shortArg(s: string): string {
+  const one = s.replace(/\s+/g, " ").trim()
+  return one.length > 120 ? one.slice(0, 119) + "…" : one
+}
+
+function toolIndex(parts: Part[], id?: string): number {
+  if (id) {
+    const idx = parts.findIndex(p => p.type === "tool" && p.id === id)
+    if (idx >= 0) return idx
+  }
+  for (let i = parts.length - 1; i >= 0; i--)
+    if (parts[i].type === "tool" && (parts[i] as ToolPart).status === "running") return i
+  return -1
 }
 
 // ── Internals ───────────────────────────────────────────────────────

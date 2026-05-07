@@ -183,7 +183,7 @@ describe("transcriptToMessages", () => {
     expect(ms[0].parts[0]).toMatchObject({ content: "first\nsecond" })
   })
 
-  test("tool + system rows filtered out entirely", () => {
+  test("tool + system rows without matching assistant call are ignored", () => {
     const ms = transcriptToMessages([
       { role: "system", text: "sys" },
       { role: "tool", name: "read_file", context: "/etc/hosts" },
@@ -191,5 +191,50 @@ describe("transcriptToMessages", () => {
     ])
     expect(ms).toHaveLength(1)
     expect(ms[0].role).toBe("user")
+  })
+
+  test("assistant tool_calls + tool rows restore tool parts on resume", () => {
+    const ms = transcriptToMessages([
+      { role: "user", text: "build it" },
+      {
+        role: "assistant",
+        tool_calls: JSON.stringify([{
+          id: "call-1",
+          function: { name: "terminal", arguments: JSON.stringify({ command: "bun run build", timeout: 120 }) },
+        }]),
+      },
+      { role: "tool", tool_call_id: "call-1", text: "{\"output\":\"ok\"}" },
+      { role: "assistant", text: "done" },
+    ])
+    expect(ms).toHaveLength(2)
+    expect(ms[1].role).toBe("assistant")
+    expect(ms[1].parts).toHaveLength(2)
+    expect(ms[1].parts[0]).toMatchObject({
+      type: "tool", id: "call-1", name: "terminal", status: "done", preview: "bun run build",
+      result: "{\"output\":\"ok\"}",
+    })
+    expect(ms[1].parts[1]).toMatchObject({ type: "text", content: "done" })
+  })
+
+  test("plaintext reasoning restores a thinking part before text", () => {
+    const ms = transcriptToMessages([{
+      role: "assistant",
+      reasoning_content: "I should inspect first.",
+      text: "I checked it.",
+    }])
+    expect(ms).toHaveLength(1)
+    expect(ms[0].parts[0]).toMatchObject({
+      type: "thinking", content: "I should inspect first.", streaming: false,
+    })
+    expect(ms[0].parts[1]).toMatchObject({ type: "text", content: "I checked it." })
+  })
+
+  test("raw content column is accepted when text is absent", () => {
+    const ms = transcriptToMessages([
+      { role: "user", content: "hi from db" },
+      { role: "assistant", content: "hello from db" },
+    ])
+    expect(ms[0].parts[0]).toMatchObject({ type: "text", content: "hi from db" })
+    expect(ms[1].parts[0]).toMatchObject({ type: "text", content: "hello from db" })
   })
 })

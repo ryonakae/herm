@@ -232,8 +232,17 @@ export type TranscriptMessage = {
   /** Either a plain string (text-mode, assistant, system) or a list of
    *  OpenAI content parts (native-mode user turns with attached images). */
   text?: string | ContentPart[]
+  /** Raw DB column name, present on some gateway/session paths. */
+  content?: string | ContentPart[]
   name?: string
   context?: string
+  tool_call_id?: string
+  tool_calls?: string
+  reasoning?: string
+  reasoning_content?: string
+  reasoning_details?: string
+  codex_reasoning_items?: string
+  codex_message_items?: string
 }
 
 export type CommandsCatalogResponse = {

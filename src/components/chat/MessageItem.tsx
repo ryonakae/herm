@@ -1,6 +1,6 @@
 import { memo, useMemo, useRef, useState, type RefObject } from "react"
 import type { RGBA, MouseEvent } from "@opentui/core"
-import type { Message, Part, TextPart, ToolPart, PromptPart } from "../../types/message"
+import type { Message, Part, TextPart, ToolPart, ThinkingPart, PromptPart } from "../../types/message"
 import { ErrorBlock } from "./ErrorBlock"
 import { MediaChip, classify, splitContent } from "./MediaChip"
 import { CodeBlock } from "./CodeBlock"
@@ -261,6 +261,32 @@ const AssistantMessage = memo(({ message, streaming, prompt, onPick }: {
     })
   }
 
+  const body = () => {
+    if (!inline) return message.parts.map(part)
+    const out: React.ReactNode[] = []
+    let buf: Array<ThinkingPart | ToolPart> = []
+    const flush = () => {
+      if (!buf.length) return
+      const key = buf.map(p => p.type === "tool" ? p.id : p.key).filter(Boolean).join("-")
+      out.push(<ThoughtInline key={`th-${key || out.length}`} parts={buf} />)
+      buf
+        .filter((p): p is ToolPart => p.type === "tool" && (!!p.diff || isDiff(p.result)))
+        .forEach(p => out.push(<InlineDiff key={`d-${p.id || p.name}`} tool={p} />))
+      buf = []
+    }
+    message.parts.forEach((p, i) => {
+      if (p.type === "thinking" || p.type === "tool") {
+        if (buf.length && buf[0].type !== p.type) flush()
+        buf.push(p)
+        return
+      }
+      flush()
+      out.push(part(p, i))
+    })
+    flush()
+    return out
+  }
+
   return (
     <box flexDirection="column" marginBottom={1}
          backgroundColor={hover ? theme.backgroundElement : undefined}
@@ -276,9 +302,8 @@ const AssistantMessage = memo(({ message, streaming, prompt, onPick }: {
             </text></box>
           ) : null}
         </box>
-        {inline ? <ThoughtInline parts={message.parts} /> : null}
-        {message.parts.map(part)}
-        {diffs.map(t => <InlineDiff key={t.id || t.name} tool={t} />)}
+        {body()}
+        {!inline ? diffs.map(t => <InlineDiff key={t.id || t.name} tool={t} />) : null}
         {err ? <ErrorBlock text={message.error!} /> : null}
       </Gutter>
     </box>
