@@ -39,7 +39,7 @@ export const ThoughtInline = memo(({ parts }: { parts: Part[] }) => {
   }
 
   return (
-    <box flexDirection="column" marginTop={1}>
+    <box flexDirection="column">
       <box height={1} onMouseDown={toggle}>
         <text>
           <span fg={theme.textMuted}>{open ? "▾ " : "▸ "}</span>

@@ -76,8 +76,8 @@ describe("MessageList / thoughtDisplay", () => {
     const text = rows.findIndex(l => l.includes("Build is green."))
     expect(first).toBeGreaterThan(-1)
     expect(rows[first - 1]?.trim()).toBe("│")
-    expect(rows[first + 1]).toContain("First message.")
-    expect(msg).toBeGreaterThan(first)
+    expect(rows[first + 1]?.trim()).toBe("│")
+    expect(msg).toBe(first + 2)
     expect(tool).toBeGreaterThan(msg)
     expect(next).toBeGreaterThan(tool)
     expect(text).toBeGreaterThan(next)
@@ -105,6 +105,33 @@ describe("MessageList / thoughtDisplay", () => {
     expect(f).toContain("now reviewing output")
     expect(f).toContain("$ bun run build")
     expect(f).toContain("Read src/index.tsx")
+    t.destroy()
+  })
+
+  test("open tool block leaves one blank row before following text", async () => {
+    preferences.set("thoughtDisplay", "inline")
+    preferences.set("thoughtInlineDefaultOpen", true)
+    const msg: Message[] = [{
+      id: "a2", role: "assistant", timestamp: 0, model: "test-model",
+      parts: [
+        { type: "tool", id: "a", name: "terminal", args: "", preview: "one", status: "done" },
+        { type: "tool", id: "b", name: "terminal", args: "", preview: "two", status: "done" },
+        { type: "text", content: "After tools.", streaming: false },
+      ],
+    }]
+    const t = await mountNode(
+      <box flexDirection="column" width="100%" height="100%">
+        <MessageList messages={msg} streaming={false} />
+      </box>,
+      { width: 120, height: 20 },
+    )
+    await until(t, () => t.frame().includes("After tools."))
+    const rows = t.frame().split("\n")
+    const two = rows.findIndex(l => l.includes("$ two"))
+    const text = rows.findIndex(l => l.includes("After tools."))
+    expect(two).toBeGreaterThan(-1)
+    expect(rows[two + 1]?.trim()).toBe("│")
+    expect(text).toBe(two + 2)
     t.destroy()
   })
 })

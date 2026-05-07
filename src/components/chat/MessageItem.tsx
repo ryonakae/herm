@@ -51,7 +51,7 @@ const InlineDiff = memo(({ tool }: { tool: ToolPart }) => {
   const add = lines.filter(l => /^\+(?!\+\+)/.test(l)).length
   const del = lines.filter(l => /^-(?!--)/.test(l)).length
   return (
-    <box flexDirection="column" marginTop={1}
+    <box flexDirection="column"
          onMouseDown={(e: MouseEvent) => { e.stopPropagation(); setOpen(o => !o) }}>
       <box height={1}>
         <text>
@@ -262,17 +262,21 @@ const AssistantMessage = memo(({ message, streaming, prompt, onPick }: {
     })
   }
 
+  const row = (node: React.ReactNode, key: string) => (
+    <box key={key} flexDirection="column">{node}</box>
+  )
+
   const body = () => {
-    if (!inline) return message.parts.map(part)
+    if (!inline) return message.parts.map((p, i) => row(part(p, i), `p-${i}`))
     const out: React.ReactNode[] = []
     let buf: Array<ThinkingPart | ToolPart> = []
     const flush = () => {
       if (!buf.length) return
       const key = buf.map(p => p.type === "tool" ? p.id : p.key).filter(Boolean).join("-")
-      out.push(<ThoughtInline key={`th-${key || out.length}`} parts={buf} />)
+      out.push(row(<ThoughtInline parts={buf} />, `th-${key || out.length}`))
       buf
         .filter((p): p is ToolPart => p.type === "tool" && (!!p.diff || isDiff(p.result)))
-        .forEach(p => out.push(<InlineDiff key={`d-${p.id || p.name}`} tool={p} />))
+        .forEach(p => out.push(row(<InlineDiff tool={p} />, `d-${p.id || p.name}`)))
       buf = []
     }
     message.parts.forEach((p, i) => {
@@ -282,11 +286,13 @@ const AssistantMessage = memo(({ message, streaming, prompt, onPick }: {
         return
       }
       flush()
-      out.push(part(p, i))
+      out.push(row(part(p, i), `p-${i}`))
     })
     flush()
     return out
   }
+
+  const rows = body()
 
   return (
     <box flexDirection="column" marginBottom={1}
@@ -303,8 +309,10 @@ const AssistantMessage = memo(({ message, streaming, prompt, onPick }: {
             </text></box>
           ) : null}
         </box>
-        {body()}
-        {!inline ? diffs.map(t => <InlineDiff key={t.id || t.name} tool={t} />) : null}
+        <box flexDirection="column" gap={inline ? 1 : 0} marginTop={inline && rows.length ? 1 : 0}>
+          {rows}
+          {!inline ? diffs.map(t => <box key={t.id || t.name} marginTop={1}><InlineDiff tool={t} /></box>) : null}
+        </box>
         {err ? <ErrorBlock text={message.error!} /> : null}
       </Gutter>
     </box>
