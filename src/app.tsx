@@ -64,6 +64,8 @@ import { useAppKeys, redraw } from "./app/useAppKeys"
 import { quit } from "./app/exit"
 import { TABS, TAB_MAX, CHAT_TAB, TAB_SLASH } from "./app/tabs"
 import { activeProfileName } from "./utils/hermes-profiles"
+import { useGitBranch, rtrunc } from "./utils/git"
+import { formatTokens } from "./utils/tokens"
 import { rehome } from "./home/rehome"
 import { makeGoalHook } from "./app/goalHook"
 import type { Launch } from "./app/launch"
@@ -112,7 +114,6 @@ const AppInner = ({ launch: launch0 }: { launch: Launch }) => {
     setTab(t)
     setFocusRegion(t === CHAT_TAB ? "input" : "content")
   }, [])
-  const [status, setStatus] = useState("")
   const [eikon, setEikon] = useState<ParsedEikon | undefined>(undefined)
   const [queue, setQueue] = useState<string[]>([])
   // ── Splash ────────────────────────────────────────────────────────
@@ -215,7 +216,6 @@ const AppInner = ({ launch: launch0 }: { launch: Launch }) => {
     dispatch({ kind: "reset" })
     setUsage(undefined)
     setReady(false)
-    setStatus("")
     setTitle("")
     setAttachments([])
   }, [])
@@ -658,13 +658,9 @@ const AppInner = ({ launch: launch0 }: { launch: Launch }) => {
     }
     // {!cmd} spans resolve via shell.exec before submit so the
     // transcript shows what was actually sent. The await is short
-    // (gateway-side 30s cap); status line signals the wait.
+    // (gateway-side 30s cap).
     let text = raw
-    if (hasInterp(raw)) {
-      setStatus("interpolating…")
-      text = await interpolate(gw, raw)
-      setStatus("")
-    }
+    if (hasInterp(raw)) text = await interpolate(gw, raw)
     interrupted.current = false
     // Echo attachments into the user's transcript message as MEDIA: lines
     // so ChafaImage renders them inline. Gateway also tracks them in
@@ -791,7 +787,6 @@ const AppInner = ({ launch: launch0 }: { launch: Launch }) => {
       },
       onUsage: (u) => setUsage(u),
       onTurnComplete: () => {
-        setStatus("")
         spawnHistory.flush(gw, sidRef.current)
         goalHook.check(sidRef.current)
       },
@@ -812,7 +807,6 @@ const AppInner = ({ launch: launch0 }: { launch: Launch }) => {
           action: { label: "view", run: () => openAlert(dialog, "btw", text) },
         })
       },
-      onStatus: (text) => setStatus(text),
       onSkin: (s) => setSkin(deriveSkin(s)),
     })
     if (!action) return
@@ -995,6 +989,23 @@ const AppInner = ({ launch: launch0 }: { launch: Launch }) => {
   // (a card's own <input focused> would otherwise leave it blurred).
   // Keys still reach the card via onPromptKey on the global bus.
   const inputFocused = focusRegion === "input" && !prompt
+  const wide = dims.width >= (tab === CHAT_TAB ? 120 : 140)
+  const side = wide && !hideSidebar
+  const profile = activeProfileName()
+  const cwd = info?.cwd ?? process.cwd()
+  const branch = useGitBranch(cwd)
+  const used = usage?.context_used ?? info?.usage?.context_used ?? info?.context_used
+  const max = usage?.context_max ?? info?.usage?.context_max ?? info?.context_max
+  const ctx = typeof used === "number" && typeof max === "number" && max > 0
+    ? `${formatTokens(used)}/${formatTokens(max)}` : null
+  const meta = !side ? [
+    title ? `title ${rtrunc(title, 20)}` : null,
+    `profile ${profile}`,
+    `model ${info?.model ?? "—"}`,
+    `cwd ${rtrunc(cwd, 28)}`,
+    branch ? `branch ${rtrunc(branch, 18)}` : null,
+    ctx ? `ctx ${ctx}` : null,
+  ].filter(Boolean).join(" · ") : undefined
 
   return (
     <Profiler id="shell" onRender={perf.onRender}>
@@ -1025,7 +1036,7 @@ const AppInner = ({ launch: launch0 }: { launch: Launch }) => {
               <Composer
                 ref={composer}
                 focused={inputFocused} ready={ready} streaming={turn.streaming}
-                status={status}
+                meta={meta}
                 queue={queue}
                 attachments={attachments}
                 cmds={cmds}
@@ -1038,9 +1049,9 @@ const AppInner = ({ launch: launch0 }: { launch: Launch }) => {
               />
             </box>
           </box>
-          {dims.width >= (tab === CHAT_TAB ? 120 : 140) && !hideSidebar ? (
+          {side ? (
             <Profiler id="sidebar" onRender={perf.onRender}>
-              <Sidebar agentState={agentState} info={info} usage={usage} eikon={eikon} profile={activeProfileName()}
+              <Sidebar agentState={agentState} info={info} usage={usage} eikon={eikon} profile={profile}
                        title={title}
                        cloud={tab === 0 && cloud} pulse={turn.streaming}
                        onAvatar={onAvatar} onAvatarHold={onAvatarHold} />

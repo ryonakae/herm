@@ -21,6 +21,29 @@ describe("app", () => {
     t.destroy()
   })
 
+  test("shows compact session metadata when sidebar is hidden", async () => {
+    const t = await mount({ width: 100, height: 30 })
+    await until(t, () => t.frame().includes("profile default"))
+    const f = t.frame()
+
+    expect(f).toContain("model test-model")
+    expect(f).toContain("cwd ")
+    expect(f).toContain("branch ")
+    t.destroy()
+  })
+
+  test("hides transient thinking status text under the composer", async () => {
+    const t = await mount({ width: 100, height: 30 })
+    await until(t, () => t.frame().includes("Ready"))
+    t.gw.push({ type: "message.start" })
+    t.gw.push({ type: "thinking.delta", payload: { text: "(*´ω｀*) Thinking..." } })
+    await t.settle()
+
+    expect(t.frame()).not.toContain("Thinking...")
+    expect(t.frame()).not.toContain("Generating...")
+    t.destroy()
+  })
+
   test("ctrl+left/right switches tabs", async () => {
     const t = await mount()
     await until(t, () => t.frame().includes("Ready"))
@@ -292,7 +315,7 @@ describe("app", () => {
     const call = t.gw.last("prompt.submit")
     expect(call?.params.text).toBe("hello gateway")
     // User messages render inside a left-side gutter.
-    expect(t.frame()).toMatch(/│ hello gateway/)
+    expect(t.frame()).toMatch(/│  hello gateway/)
 
     t.destroy()
   })
@@ -957,7 +980,7 @@ describe("app", () => {
 
     act(() => t.gw.push({ type: "message.start" }))
     act(() => t.gw.push({ type: "message.delta", payload: { text: "alpha " } }))
-    await until(t, () => t.frame().includes("Generating"))
+    await until(t, () => t.frame().includes("Type to queue"))
 
     act(() => t.keys.pressEscape()); await t.settle()
     act(() => t.keys.pressEscape())

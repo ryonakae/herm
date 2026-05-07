@@ -41,7 +41,7 @@ type Props = {
   focused: boolean
   ready: boolean
   streaming: boolean
-  status?: string
+  meta?: string
   queue?: ReadonlyArray<string>
   attachments?: ReadonlyArray<ImageAttachResponse>
   cmds: ReadonlyArray<SlashCommand>
@@ -229,7 +229,7 @@ export const Composer = memo(forwardRef<ComposerHandle, Props>((props, ref) => {
   }), [hist.up, hist.down, pop.setCursor, write])
 
   const label = !props.ready ? "Connecting..."
-    : props.streaming ? (props.status || "Generating...")
+    : props.streaming ? ""
     : "Ready"
   const dot = props.ready ? (props.streaming ? theme.warning : theme.success) : theme.error
 
@@ -336,13 +336,17 @@ export const Composer = memo(forwardRef<ComposerHandle, Props>((props, ref) => {
       </box>
 
       <box height={1} flexDirection="row" paddingX={1}>
-        <text>
-          <span fg={dot}>● </span>
-          <span fg={theme.textMuted}>{label}</span>
-        </text>
+        <box flexShrink={0}>
+          <text>
+            <span fg={dot}>● </span>
+            <span fg={theme.textMuted}>{label}</span>
+          </text>
+        </box>
         <box flexGrow={1} />
         {props.streaming && (props.queue?.length ?? 0) > 0 ? (
-          <text fg={theme.textMuted}>{keys.print("queue.flush")} to send queued now</text>
+          <box flexShrink={0}><text fg={theme.textMuted}>{keys.print("queue.flush")} to send queued now</text></box>
+        ) : props.meta ? (
+          <box flexShrink={1}><text fg={theme.textMuted}>{props.meta}</text></box>
         ) : null}
       </box>
     </box>
