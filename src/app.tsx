@@ -72,6 +72,17 @@ import type { Launch } from "./app/launch"
 
 type AppProps = { initialTheme?: string; gateway?: Gateway; launch?: Launch }
 
+function fishpwd(dir: string): string {
+  const home = process.env.HOME
+  const base = home && (dir === home || dir.startsWith(`${home}/`))
+    ? `~${dir.slice(home.length)}` : dir
+  const head = base.startsWith("~/") ? "~/" : base.startsWith("/") ? "/" : ""
+  const body = head ? base.slice(head.length) : base
+  const parts = body.split("/").filter(Boolean)
+  if (parts.length <= 1) return base
+  return head + parts.map((p, i) => i === parts.length - 1 ? p : p[0]?.toLowerCase()).join("/")
+}
+
 export const App = (props: AppProps) => (
   <ThemeProvider initial={props.initialTheme}>
     <GatewayProvider client={props.gateway}>
@@ -999,12 +1010,12 @@ const AppInner = ({ launch: launch0 }: { launch: Launch }) => {
   const ctx = typeof used === "number" && typeof max === "number" && max > 0
     ? `${formatTokens(used)}/${formatTokens(max)}` : null
   const meta = !side ? [
-    title ? `title ${rtrunc(title, 20)}` : null,
-    `profile ${profile}`,
-    `model ${info?.model ?? "—"}`,
-    `cwd ${rtrunc(cwd, 28)}`,
-    branch ? `branch ${rtrunc(branch, 18)}` : null,
-    ctx ? `ctx ${ctx}` : null,
+    title ? rtrunc(title, 20) : null,
+    profile,
+    info?.model ?? "—",
+    ctx,
+    rtrunc(fishpwd(cwd), 28),
+    branch ? rtrunc(branch, 18) : null,
   ].filter(Boolean).join(" · ") : undefined
 
   return (

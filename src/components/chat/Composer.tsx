@@ -336,17 +336,16 @@ export const Composer = memo(forwardRef<ComposerHandle, Props>((props, ref) => {
       </box>
 
       <box height={1} flexDirection="row" paddingX={1}>
-        <box flexShrink={0}>
+        <box flexShrink={1}>
           <text>
             <span fg={dot}>● </span>
             <span fg={theme.textMuted}>{label}</span>
+            {props.meta ? <span fg={theme.textMuted}>{` · ${props.meta}`}</span> : null}
           </text>
         </box>
         <box flexGrow={1} />
         {props.streaming && (props.queue?.length ?? 0) > 0 ? (
           <box flexShrink={0}><text fg={theme.textMuted}>{keys.print("queue.flush")} to send queued now</text></box>
-        ) : props.meta ? (
-          <box flexShrink={1}><text fg={theme.textMuted}>{props.meta}</text></box>
         ) : null}
       </box>
     </box>

@@ -23,12 +23,14 @@ describe("app", () => {
 
   test("shows compact session metadata when sidebar is hidden", async () => {
     const t = await mount({ width: 100, height: 30 })
-    await until(t, () => t.frame().includes("profile default"))
+    await until(t, () => t.frame().includes("● Ready · default · test-model"))
     const f = t.frame()
 
-    expect(f).toContain("model test-model")
-    expect(f).toContain("cwd ")
-    expect(f).toContain("branch ")
+    expect(f).toContain("~/d/herm")
+    expect(f).not.toContain("profile default")
+    expect(f).not.toContain("model test-model")
+    expect(f).not.toContain("cwd ")
+    expect(f).not.toContain("branch ")
     t.destroy()
   })
 
