@@ -88,8 +88,8 @@ describe("MediaChip > classify", () => {
 })
 
 describe("MessageItem > media rendering", () => {
-  const msg = (content: string): Message => ({
-    id: "a1", role: "assistant", timestamp: 0, model: "test",
+  const msg = (content: string, role: "user" | "assistant" = "assistant"): Message => ({
+    id: "a1", role, timestamp: 0, model: role === "assistant" ? "test" : undefined,
     parts: [{ type: "text", content, streaming: false }],
   })
 
@@ -109,6 +109,26 @@ describe("MessageItem > media rendering", () => {
     t.destroy()
   })
 
+  test("user fenced code does not double horizontal padding after the gutter", async () => {
+    const t = await mountNode(
+      <box flexDirection="column" width="100%" height="100%">
+        <MessageItem
+          message={msg("here:\n```ts\nconst x = 1\n```\ndone.", "user")}
+          streaming={false}
+        />
+      </box>,
+      { width: 100, height: 16 },
+    )
+    await until(t, () => t.frame().includes("const x = 1"))
+    const rows = t.frame().split("\n")
+    const text = rows.find(l => l.includes("here:"))!
+    const hdr = rows.find(l => l.includes("ts") && l.includes("1 ln"))!
+    const code = rows.find(l => l.includes("const x = 1"))!
+    expect(hdr.indexOf("ts")).toBe(text.indexOf("here:"))
+    expect(code.indexOf("const x = 1")).toBe(text.indexOf("here:"))
+    t.destroy()
+  })
+
   test("renders fenced code with chrome — lang label, line count, click-to-copy", async () => {
     const t = await mountNode(
       <box flexDirection="column" width="100%" height="100%">
@@ -121,20 +141,26 @@ describe("MessageItem > media rendering", () => {
     )
     await until(t, () => t.frame().includes("here:") && t.frame().includes("done."))
     const f = t.frame()
-    // ┃-bar panel, lang label, body, line count
-    expect(f).toContain("┃")
-    const hdr = f.split("\n").find(l => l.includes("┃") && l.includes("ts"))!
-    expect(hdr).toMatch(/ts\s.*2 ln/)
+    // Panel chrome: lang label, body, line count; no left gutter bar.
+    expect(f).not.toContain("┃")
+    const hdr = f.split("\n").find(l => l.includes("ts") && l.includes("2 ln"))!
+    expect(hdr).toBeTruthy()
     expect(f).toContain("const x = 1")
     expect(f).not.toContain("```")
+    const rows = f.split("\n")
+    const y = rows.findIndex(l => l.includes("const y = 2"))
+    const done = rows.findIndex(l => l.includes("done."))
+    expect(y).toBeGreaterThan(-1)
+    expect(rows[y + 1]?.trim()).toBe("│")
+    expect(rows[y + 2]?.trim()).toBe("│")
+    expect(done).toBe(y + 3)
 
     // hover header → 'copy' appears; click → toast
-    const lines = f.split("\n")
-    const y = lines.findIndex(l => /┃.*\bts\b.*2 ln/.test(l))
-    const x = lines[y].indexOf("2 ln")
-    await act(async () => { await t.mouse.moveTo(x, y) })
+    const hy = rows.findIndex(l => /\bts\b.*2 ln/.test(l))
+    const x = rows[hy].indexOf("2 ln")
+    await act(async () => { await t.mouse.moveTo(x, hy) })
     await until(t, () => t.frame().includes("⧉ copy"))
-    await act(async () => { await t.mouse.pressDown(x, y) })
+    await act(async () => { await t.mouse.pressDown(x, hy) })
     await until(t, () => t.frame().includes("Copied 2 lines"))
     t.destroy()
   })

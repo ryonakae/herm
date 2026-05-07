@@ -35,11 +35,15 @@ function extract(msg: Message): string {
     .join("")
 }
 
+const ANSI = /\x1b\[[0-9;?]*[A-Za-z]/g
 const trunc = (s: string, max: number) => s.length <= max ? s : s.slice(0, max - 1) + "…"
-const clean = (s: string) => s.replace(/^\s*[│┃┊]\s*/, "").trim()
+const clean = (s: string) => s.replace(ANSI, "").replace(/^[\s│┃┊]+/, "").trim()
 const strip = (diff: string, label: string) => {
   const rows = diff.split("\n")
-  return clean(rows[0] ?? "") === label ? rows.slice(1).join("\n") : diff
+  const i = rows.findIndex(r => clean(r) !== "")
+  if (i < 0) return ""
+  const rest = rows.slice(i)
+  return clean(rest[0] ?? "") === label ? rest.slice(1).join("\n") : rows.slice(i).join("\n")
 }
 
 // Collapsible diff chip: shows filename/preview + +N/-M, expands to full
@@ -183,7 +187,7 @@ const UserMessage = memo(({ message, onRewind }: { message: Message; onRewind?: 
                 )
               }
               if ("code" in s) return (
-                <CodeBlock key={`${k}-c${j}`} code={s.code} lang={s.lang} />
+                <CodeBlock key={`${k}-c${j}`} code={s.code} lang={s.lang} pad={0} />
               )
               return <text key={`${k}-${j}`} fg={theme.text} wrapMode="word">{s.md}</text>
             })

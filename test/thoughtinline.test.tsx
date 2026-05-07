@@ -25,7 +25,7 @@ const turn: Message[] = [
       {
         type: "tool", id: "t3", name: "patch", args: "",
         preview: "  ┊ review diff", status: "done", duration: 34,
-        diff: "--- a/a.ts\n+++ b/a.ts\n@@ -1 +1 @@\n-old\n+new",
+        diff: "  ┊ review diff\n--- a/a.ts\n+++ b/a.ts\n@@ -1 +1 @@\n-old\n+new",
       },
       { type: "thinking", content: "now reviewing output", streaming: false, key: "th-2" },
       { type: "text", content: "Build is green.", streaming: false },
@@ -105,6 +105,26 @@ describe("MessageList / thoughtDisplay", () => {
     expect(f).toContain("now reviewing output")
     expect(f).toContain("$ bun run build")
     expect(f).toContain("Read src/index.tsx")
+    t.destroy()
+  })
+
+  test("open inline diff strips the duplicated review diff row", async () => {
+    preferences.set("thoughtDisplay", "inline")
+    const t = await mountNode(
+      <box flexDirection="column" width="100%" height="100%">
+        <MessageList messages={turn} streaming={false} />
+      </box>,
+      { width: 120, height: 30 },
+    )
+    await until(t, () => t.frame().includes("▸ review diff"))
+    const rows = t.frame().split("\n")
+    const y = rows.findIndex(l => l.includes("▸ review diff"))
+    const x = rows[y].indexOf("review diff")
+    await t.mouse.pressDown(x, y)
+    await until(t, () => t.frame().includes("--- a/a.ts"))
+    const f = t.frame()
+    expect(f).toContain("▾ review diff")
+    expect(f).not.toContain("┊ review diff")
     t.destroy()
   })
 

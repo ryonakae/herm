@@ -1,10 +1,9 @@
-// Fenced code block chrome — bg panel, ┃-bar, lang label, click-to-copy.
+// Fenced code block chrome — bg panel, lang label, click-to-copy.
 // The body is a <code> renderable so tree-sitter highlighting stays
 // identical to what MarkdownRenderable would have produced; the point
 // of pulling fences out of the markdown stream is purely to wrap them.
 
 import { memo, useState } from "react"
-import { LEFT_BAR } from "../../ui/borders"
 import { useTheme } from "../../theme"
 import { useToast } from "../../ui/toast"
 import { copy } from "../../utils/clipboard"
@@ -17,13 +16,14 @@ const FILETYPE: Record<string, string> = {
   yml: "yaml", md: "markdown",
 }
 
-export const CodeBlock = memo((props: { code: string; lang?: string; streaming?: boolean }) => {
+export const CodeBlock = memo((props: { code: string; lang?: string; streaming?: boolean; pad?: number }) => {
   const { theme, syntaxStyle } = useTheme()
   const toast = useToast()
   const [hover, setHover] = useState(false)
 
   const ft = props.lang ? FILETYPE[props.lang.toLowerCase()] ?? props.lang.toLowerCase() : undefined
   const lines = props.code.split("\n").length
+  const pad = props.pad ?? 1
 
   const onCopy = () => {
     void copy(props.code)
@@ -34,11 +34,8 @@ export const CodeBlock = memo((props: { code: string; lang?: string; streaming?:
     <box
       flexDirection="column"
       marginTop={1}
-      border={["left"]}
-      borderColor={theme.border}
-      customBorderChars={LEFT_BAR}
+      marginBottom={1}
       backgroundColor={theme.backgroundPanel}
-      paddingLeft={1}
     >
       <box
         flexDirection="row" height={1}
@@ -47,16 +44,16 @@ export const CodeBlock = memo((props: { code: string; lang?: string; streaming?:
         onMouseOver={() => setHover(true)}
         onMouseOut={() => setHover(false)}
       >
-        <box flexGrow={1} paddingLeft={1}>
+        <box flexGrow={1} paddingLeft={pad}>
           <text fg={theme.textMuted}>{props.lang || "text"}</text>
         </box>
-        <box paddingRight={1}>
+        <box paddingRight={pad}>
           <text fg={hover ? theme.accent : theme.textMuted}>
             {hover ? "⧉ copy" : `${lines} ln`}
           </text>
         </box>
       </box>
-      <box paddingX={1} paddingY={ft ? 0 : 1}>
+      <box paddingX={pad} paddingY={1}>
         {ft
           ? <code content={props.code} filetype={ft} syntaxStyle={syntaxStyle}
                   fg={theme.text} wrapMode="none" streaming={props.streaming} />
