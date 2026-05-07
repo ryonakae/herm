@@ -31,6 +31,7 @@ if (argv.includes("--version") || argv.includes("-v")) {
   process.exit(0)
 }
 const launch = parseLaunch(argv)
+if (launch.thoughtDisplay) preferences.apply({ thoughtDisplay: launch.thoughtDisplay })
 
 // Initialize and render
 const main = async () => {

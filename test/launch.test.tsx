@@ -19,6 +19,8 @@ describe("parseLaunch", () => {
     [["--foo", "-c"], { mode: "resume", splash: true }],
     [["--no-splash"], { mode: "new", splash: false }],
     [["--no-splash", "-c"], { mode: "resume", splash: false }],
+    [["--thoughts", "inline"], { mode: "new", splash: true, thoughtDisplay: "inline" }],
+    [["-c", "--thoughts", "cloud"], { mode: "resume", splash: true, thoughtDisplay: "cloud" }],
   ]
   for (const [argv, want] of cases) {
     test(JSON.stringify(argv), () => expect(parseLaunch(argv)).toEqual(want))

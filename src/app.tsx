@@ -532,11 +532,11 @@ const AppInner = ({ launch: launch0 }: { launch: Launch }) => {
           toast.show({ variant: "info", message: `mouse ${want ? "on" : "off"}` })
           return
         }
-        case "inline-process": {
-          const cur = preferences.get("inlineProcess") ?? false
-          const want = arg === "on" ? true : arg === "off" ? false : !cur
-          preferences.set("inlineProcess", want)
-          toast.show({ variant: "info", message: `inline process ${want ? "on" : "off"}` })
+        case "thoughts": {
+          const cur = preferences.get("thoughtDisplay") ?? "cloud"
+          const mode = arg === "inline" || arg === "cloud" ? arg : cur === "inline" ? "cloud" : "inline"
+          preferences.set("thoughtDisplay", mode)
+          toast.show({ variant: "info", message: `thoughts ${mode}` })
           return
         }
         case "redraw": redraw(renderer); return

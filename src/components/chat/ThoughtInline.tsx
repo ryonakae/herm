@@ -1,6 +1,6 @@
-// Inline-process summary — collapsed view of an assistant turn's
+// ThoughtInline summary — collapsed view of an assistant turn's
 // reasoning + tool trail. Lives at the top of the MessageItem body when
-// the user opts into `inlineProcess`. ThoughtCloud is suppressed in
+// the user opts into `thoughtDisplay: "inline"`. ThoughtCloud is suppressed in
 // that mode so this is the only surface for thinking/tool parts.
 //
 // Closed: a one-liner pill (`▸ 2 reasoning · 3 tools`).
@@ -21,10 +21,10 @@ function summary(think: number, tools: number): string {
   return bits.join(" · ")
 }
 
-export const TurnProcess = memo(({ parts }: { parts: Part[] }) => {
+export const ThoughtInline = memo(({ parts }: { parts: Part[] }) => {
   const theme = useTheme().theme
   const detail = usePref("toolDetails") ?? "expanded"
-  const initial = usePref("inlineProcessDefaultOpen") ?? false
+  const initial = usePref("thoughtInlineDefaultOpen") ?? false
   const [open, setOpen] = useState(initial)
 
   const items = parts.filter(

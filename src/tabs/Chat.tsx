@@ -30,7 +30,7 @@ export const Chat = memo(({
   onRewind?: (m: Message) => void
 }) => {
   const theme = useTheme().theme
-  const inlineProcess = usePref("inlineProcess") ?? false
+  const inline = usePref("thoughtDisplay") === "inline"
   return (
     <box
       flexGrow={1}
@@ -39,7 +39,7 @@ export const Chat = memo(({
       backgroundColor={theme.background}
     >
       <MessageList messages={messages} streaming={streaming} prompt={prompt} onRewind={onRewind} onPick={onPick} />
-      {cloud && !inlineProcess ? (
+      {cloud && !inline ? (
         <box position="absolute" top={0} left={0} right={0} zIndex={1}>
           <ThoughtCloud
             height={cloudH} messages={messages}

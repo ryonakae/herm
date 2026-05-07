@@ -18,6 +18,7 @@ import { useSyncExternalStore } from "react"
 // ─── Schema ──────────────────────────────────────────────────────────
 
 export type DetailMode = "hidden" | "collapsed" | "expanded"
+export type ThoughtDisplay = "cloud" | "inline"
 
 interface TuiPreferences {
   /** JSON schema reference (for editor autocomplete) */
@@ -38,11 +39,13 @@ interface TuiPreferences {
   animations?: boolean
   /** Thought-cloud tool trail verbosity */
   toolDetails?: DetailMode
-  /** Render thinking + tool calls inline in the transcript instead of
-   *  the ThoughtCloud dialog. When true, ThoughtCloud is suppressed and
-   *  each turn gets a collapsible `▸ N steps` summary above its body. */
+  /** Where reasoning + tool calls are displayed. */
+  thoughtDisplay?: ThoughtDisplay
+  /** Initial open state of the per-turn ThoughtInline summary. */
+  thoughtInlineDefaultOpen?: boolean
+  /** Deprecated: migrated to thoughtDisplay on load. */
   inlineProcess?: boolean
-  /** Initial open state of the per-turn inline-process summary. */
+  /** Deprecated: migrated to thoughtInlineDefaultOpen on load. */
   inlineProcessDefaultOpen?: boolean
   /** User keybinding overrides (ActionId → chord string) */
   keys?: Record<string, string>
@@ -100,6 +103,10 @@ export function load(): TuiPreferences {
       return prefs
     }
     const raw = JSON.parse(readFileSync(CONFIG_FILE, "utf-8"))
+    if (raw.thoughtDisplay !== "cloud" && raw.thoughtDisplay !== "inline")
+      raw.thoughtDisplay = raw.inlineProcess ? "inline" : "cloud"
+    if (raw.thoughtInlineDefaultOpen === undefined && raw.inlineProcessDefaultOpen !== undefined)
+      raw.thoughtInlineDefaultOpen = raw.inlineProcessDefaultOpen
     const prefs = { ...DEFAULTS, ...raw }
     cached = prefs
     return prefs
@@ -148,6 +155,11 @@ export function get<K extends keyof TuiPreferences>(key: K): TuiPreferences[K] {
 export function set<K extends keyof TuiPreferences>(key: K, value: TuiPreferences[K]): void {
   save({ [key]: value } as Partial<TuiPreferences>)
   for (const l of listeners) l()
+}
+
+/** Apply startup-only preference overrides without writing tui.json. */
+export function apply(partial: Partial<TuiPreferences>): void {
+  Object.assign(load(), partial)
 }
 
 // ─── Reactive ────────────────────────────────────────────────────────

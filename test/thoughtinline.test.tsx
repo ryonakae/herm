@@ -28,11 +28,11 @@ const turn: Message[] = [
 ]
 
 afterEach(() => {
-  preferences.set("inlineProcess", undefined)
-  preferences.set("inlineProcessDefaultOpen", undefined)
+  preferences.set("thoughtDisplay", undefined)
+  preferences.set("thoughtInlineDefaultOpen", undefined)
 })
 
-describe("MessageList / inlineProcess", () => {
+describe("MessageList / thoughtDisplay", () => {
   test("off (default): trail badge shows, no summary line", async () => {
     const t = await mountNode(
       <box flexDirection="column" width="100%" height="100%">
@@ -49,7 +49,7 @@ describe("MessageList / inlineProcess", () => {
   })
 
   test("on, closed by default: summary line replaces trail; bodies hidden", async () => {
-    preferences.set("inlineProcess", true)
+    preferences.set("thoughtDisplay", "inline")
     const t = await mountNode(
       <box flexDirection="column" width="100%" height="100%">
         <MessageList messages={turn} streaming={false} />
@@ -69,8 +69,8 @@ describe("MessageList / inlineProcess", () => {
   })
 
   test("on with defaultOpen: summary opened; thinking + tool rows visible", async () => {
-    preferences.set("inlineProcess", true)
-    preferences.set("inlineProcessDefaultOpen", true)
+    preferences.set("thoughtDisplay", "inline")
+    preferences.set("thoughtInlineDefaultOpen", true)
     const t = await mountNode(
       <box flexDirection="column" width="100%" height="100%">
         <MessageList messages={turn} streaming={false} />

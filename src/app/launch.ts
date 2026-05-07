@@ -2,6 +2,7 @@
 // Bare `herm` → fresh session (splash shows continue-prompt).
 // `-c` / `--continue` / `--resume [id]` → resume (splash shows Loading…).
 // `--no-splash` → skip splash in either mode.
+// `--thoughts cloud|inline` → choose the thought display for this run.
 
 import { readFileSync, existsSync } from "node:fs"
 import { dirname, join } from "node:path"
@@ -19,25 +20,33 @@ const pkgVersion = (d: string, up = 4): string => {
 export const VERSION = pkgVersion(import.meta.dirname)
 
 export type Launch =
-  | { mode: "new"; splash?: boolean }
-  | { mode: "resume"; sid?: string; splash?: boolean }
+  | { mode: "new"; splash?: boolean; thoughtDisplay?: "cloud" | "inline" }
+  | { mode: "resume"; sid?: string; splash?: boolean; thoughtDisplay?: "cloud" | "inline" }
 
 /** Parse process argv (everything after the script path). No deps. */
 export function parseLaunch(argv: readonly string[]): Launch {
   let splash = true
+  let mode: "new" | "resume" = "new"
+  let sid: string | undefined
+  let thoughtDisplay: "cloud" | "inline" | undefined
   for (let i = 0; i < argv.length; i++) {
     const a = argv[i]
     if (a === "--no-splash") { splash = false; continue }
-    if (a === "-c" || a === "--continue") return { mode: "resume", splash }
+    if (a === "-c" || a === "--continue") { mode = "resume"; continue }
+    if (a === "--thoughts") {
+      const next = argv[i + 1]
+      if (next === "cloud" || next === "inline") { thoughtDisplay = next; i++ }
+      continue
+    }
     if (a === "--resume") {
       const next = argv[i + 1]
       // Treat a following non-flag token as the session id.
-      return next && !next.startsWith("-")
-        ? { mode: "resume", sid: next, splash }
-        : { mode: "resume", splash }
+      mode = "resume"
+      if (next && !next.startsWith("-")) { sid = next; i++ }
     }
   }
-  return { mode: "new", splash }
+  const opt = thoughtDisplay ? { thoughtDisplay } : {}
+  return mode === "resume" ? { mode, ...(sid ? { sid } : {}), splash, ...opt } : { mode, splash, ...opt }
 }
 
 export const HELP = `\
@@ -48,6 +57,7 @@ Usage:
   herm -c, --continue     resume the last real TUI session
   herm --resume [id]      resume last (or the given) session
   herm --no-splash        skip the launch splash
+  herm --thoughts <mode>   thought display: cloud or inline
   herm -v, --version      print version
   herm -h, --help         show this help
 `
