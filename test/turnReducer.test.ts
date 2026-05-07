@@ -100,6 +100,19 @@ describe("turnReducer", () => {
     expect(last(s).parts[0]).toMatchObject({ type: "thinking", content: "recovered from last_reasoning", streaming: false })
   })
 
+  test("thinking after a tool starts a later thinking part", () => {
+    const s = run([
+      { kind: "message.start" },
+      { kind: "thinking", text: "first", final: false },
+      { kind: "tool.start", id: "t1", name: "read_file" },
+      { kind: "tool.complete", id: "t1", summary: "ok" },
+      { kind: "thinking", text: "second", final: false },
+    ])
+    expect(kinds(last(s).parts)).toEqual(["thinking", "tool", "thinking"])
+    expect(last(s).parts[0]).toMatchObject({ type: "thinking", content: "first" })
+    expect(last(s).parts[2]).toMatchObject({ type: "thinking", content: "second" })
+  })
+
   test("interrupt.notice dedupes consecutive identical notices", () => {
     const s = run([
       { kind: "interrupt.notice", text: "press esc" },

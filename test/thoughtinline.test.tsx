@@ -22,6 +22,11 @@ const turn: Message[] = [
         type: "tool", id: "t2", name: "read_file", args: "",
         preview: "src/index.tsx", status: "done", duration: 12,
       },
+      {
+        type: "tool", id: "t3", name: "patch", args: "",
+        preview: "  ┊ review diff", status: "done", duration: 34,
+        diff: "--- a/a.ts\n+++ b/a.ts\n@@ -1 +1 @@\n-old\n+new",
+      },
       { type: "thinking", content: "now reviewing output", streaming: false, key: "th-2" },
       { type: "text", content: "Build is green.", streaming: false },
     ],
@@ -43,7 +48,7 @@ describe("MessageList / thoughtDisplay", () => {
     )
     await until(t, () => t.frame().includes("Build is green."))
     const f = t.frame()
-    expect(f).toContain("terminal · read_file") // trail badge
+    expect(f).toContain("terminal · read_file · patch") // trail badge
     expect(f).not.toContain("reasoning")        // summary line absent
     expect(f).not.toContain("thinking out loud")
     t.destroy()
@@ -60,14 +65,17 @@ describe("MessageList / thoughtDisplay", () => {
     await until(t, () => t.frame().includes("Build is green."))
     const f = t.frame()
     expect(f).toContain("▸ 1 reasoning")
-    expect(f).toContain("▸ 2 tools")
+    expect(f).toContain("▸ 3 tools")
+    expect(f).toContain("▸ review diff")
+    expect(f).not.toContain("┊ review diff")
     const rows = f.split("\n")
     const first = rows.findIndex(l => l.includes("▸ 1 reasoning"))
     const msg = rows.findIndex(l => l.includes("First message."))
-    const tool = rows.findIndex((l, i) => i > msg && l.includes("▸ 2 tools"))
+    const tool = rows.findIndex((l, i) => i > msg && l.includes("▸ 3 tools"))
     const next = rows.findIndex((l, i) => i > tool && l.includes("▸ 1 reasoning"))
     const text = rows.findIndex(l => l.includes("Build is green."))
     expect(first).toBeGreaterThan(-1)
+    expect(rows[first + 1]?.trim()).toBe("│")
     expect(msg).toBeGreaterThan(first)
     expect(tool).toBeGreaterThan(msg)
     expect(next).toBeGreaterThan(tool)
@@ -89,7 +97,9 @@ describe("MessageList / thoughtDisplay", () => {
     await until(t, () => t.frame().includes("Build is green."))
     const f = t.frame()
     expect(f).toContain("▾ 1 reasoning")
-    expect(f).toContain("▾ 2 tools")
+    expect(f).toContain("▾ 3 tools")
+    expect(f).not.toContain("Thinking")
+    expect(f).not.toContain("Tool calls")
     expect(f).toContain("thinking out loud")
     expect(f).toContain("now reviewing output")
     expect(f).toContain("$ bun run build")

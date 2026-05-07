@@ -439,9 +439,9 @@ function upsertThinking(messages: Message[], text: string, final: boolean): Mess
   return withLastAssistant(
     messages,
     m => {
-      const idx = m.parts.findIndex(p => p.type === "thinking")
-      if (idx >= 0) {
-        const prev = m.parts[idx] as Part & { type: "thinking"; content: string }
+      const idx = m.parts.length - 1
+      const prev = m.parts[idx]
+      if (prev?.type === "thinking") {
         // `final` (reasoning.available) is a fallback for providers
         // that don't stream deltas — keep the accumulated buffer if we
         // have one. Matches Ink turnController.recordReasoningAvailable.
@@ -450,7 +450,8 @@ function upsertThinking(messages: Message[], text: string, final: boolean): Mess
         parts[idx] = { ...prev, content, streaming: !final }
         return { ...m, parts }
       }
-      return { ...m, parts: [{ type: "thinking" as const, key: pid(), content: text, streaming: !final }, ...m.parts] }
+      if (final && m.parts.some(p => p.type === "thinking")) return m
+      return { ...m, parts: [...m.parts, { type: "thinking" as const, key: pid(), content: text, streaming: !final }] }
     },
     () => assistant([{ type: "thinking", key: pid(), content: text, streaming: !final }]),
   )

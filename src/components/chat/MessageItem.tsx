@@ -36,6 +36,7 @@ function extract(msg: Message): string {
 }
 
 const trunc = (s: string, max: number) => s.length <= max ? s : s.slice(0, max - 1) + "…"
+const clean = (s: string) => s.replace(/^\s*[│┃┊]\s*/, "").trim()
 
 // Collapsible diff chip: shows filename/preview + +N/-M, expands to full
 // DiffBlock on click. Lives in the message body so edits land in the
@@ -55,7 +56,7 @@ const InlineDiff = memo(({ tool }: { tool: ToolPart }) => {
       <box height={1}>
         <text>
           <span fg={theme.textMuted}>{open ? "▾ " : "▸ "}</span>
-          <span fg={theme.text}>{trunc(tool.preview ?? tool.name, 50)}</span>
+          <span fg={theme.text}>{trunc(clean(tool.preview ?? tool.name), 50)}</span>
           <span fg={theme.textMuted}>  </span>
           <span fg={theme.success}>+{add}</span>
           <span fg={theme.textMuted}> / </span>
