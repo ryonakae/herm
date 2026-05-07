@@ -43,10 +43,6 @@ interface TuiPreferences {
   thoughtDisplay?: ThoughtDisplay
   /** Initial open state of the per-turn ThoughtInline summary. */
   thoughtInlineDefaultOpen?: boolean
-  /** Deprecated: migrated to thoughtDisplay on load. */
-  inlineProcess?: boolean
-  /** Deprecated: migrated to thoughtInlineDefaultOpen on load. */
-  inlineProcessDefaultOpen?: boolean
   /** User keybinding overrides (ActionId → chord string) */
   keys?: Record<string, string>
   /** Clock style for time-of-day formatters */
@@ -103,10 +99,6 @@ export function load(): TuiPreferences {
       return prefs
     }
     const raw = JSON.parse(readFileSync(CONFIG_FILE, "utf-8"))
-    if (raw.thoughtDisplay !== "cloud" && raw.thoughtDisplay !== "inline")
-      raw.thoughtDisplay = raw.inlineProcess ? "inline" : "cloud"
-    if (raw.thoughtInlineDefaultOpen === undefined && raw.inlineProcessDefaultOpen !== undefined)
-      raw.thoughtInlineDefaultOpen = raw.inlineProcessDefaultOpen
     const prefs = { ...DEFAULTS, ...raw }
     cached = prefs
     return prefs
