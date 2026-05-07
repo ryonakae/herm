@@ -37,6 +37,10 @@ function extract(msg: Message): string {
 
 const trunc = (s: string, max: number) => s.length <= max ? s : s.slice(0, max - 1) + "…"
 const clean = (s: string) => s.replace(/^\s*[│┃┊]\s*/, "").trim()
+const strip = (diff: string, label: string) => {
+  const rows = diff.split("\n")
+  return clean(rows[0] ?? "") === label ? rows.slice(1).join("\n") : diff
+}
 
 // Collapsible diff chip: shows filename/preview + +N/-M, expands to full
 // DiffBlock on click. Lives in the message body so edits land in the
@@ -45,8 +49,10 @@ const clean = (s: string) => s.replace(/^\s*[│┃┊]\s*/, "").trim()
 const InlineDiff = memo(({ tool }: { tool: ToolPart }) => {
   const theme = useTheme().theme
   const [open, setOpen] = useState(false)
-  const diff = tool.diff ?? (isDiff(tool.result) ? tool.result : undefined)
-  if (!diff) return null
+  const raw = tool.diff ?? (isDiff(tool.result) ? tool.result : undefined)
+  if (!raw) return null
+  const label = clean(tool.preview ?? tool.name)
+  const diff = strip(raw, label)
   const lines = diff.split("\n")
   const add = lines.filter(l => /^\+(?!\+\+)/.test(l)).length
   const del = lines.filter(l => /^-(?!--)/.test(l)).length
@@ -56,14 +62,14 @@ const InlineDiff = memo(({ tool }: { tool: ToolPart }) => {
       <box height={1}>
         <text>
           <span fg={theme.textMuted}>{open ? "▾ " : "▸ "}</span>
-          <span fg={theme.text}>{trunc(clean(tool.preview ?? tool.name), 50)}</span>
+          <span fg={theme.text}>{trunc(label, 50)}</span>
           <span fg={theme.textMuted}>  </span>
           <span fg={theme.success}>+{add}</span>
           <span fg={theme.textMuted}> / </span>
           <span fg={theme.error}>-{del}</span>
         </text>
       </box>
-      {open ? <box marginTop={1}><DiffBlock text={diff} /></box> : null}
+      {open ? <box><DiffBlock text={diff} /></box> : null}
     </box>
   )
 })

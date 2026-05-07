@@ -47,7 +47,7 @@ export const ThoughtInline = memo(({ parts }: { parts: Part[] }) => {
         </text>
       </box>
       {open ? (
-        <box flexDirection="column" backgroundColor={theme.backgroundPanel} paddingX={1}>
+        <box flexDirection="column" backgroundColor={theme.backgroundPanel}>
           {items.map((p, i) => {
             const key = p.type === "thinking" ? p.key ?? `th-${i}` : p.id || `t-${i}`
             return (
