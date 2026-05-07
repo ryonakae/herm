@@ -32,11 +32,11 @@ function base(path: string): string {
   return slash >= 0 ? clean.slice(slash + 1) : clean
 }
 
-const Inline = memo(({ tool }: { tool: Part }) => {
+const Inline = memo(({ tool, indent }: { tool: Part; indent?: number }) => {
   const s = spec(tool.name)
   const body = tool.preview ? short(tool.preview) : ""
   return (
-    <InlineTool part={tool} complete={!!body || tool.status !== "running"}>
+    <InlineTool part={tool} complete={!!body || tool.status !== "running"} indent={indent}>
       {s.verb ? `${s.verb} ${body}` : body || tool.name}
     </InlineTool>
   )
@@ -45,21 +45,21 @@ const Inline = memo(({ tool }: { tool: Part }) => {
 /** Accent-filled pill: `changed <basename>`. The actual diff renders
  *  as an InlineDiff chip in the assistant message body (d39945f), so
  *  the ThoughtCloud row only needs to say *that* a file changed. */
-const FileEdit = memo(({ tool }: { tool: Part }) => {
+const FileEdit = memo(({ tool, indent }: { tool: Part; indent?: number }) => {
   const theme = useTheme().theme
   // While running (no result yet) or when preview is absent (some
   // providers omit the path), fall through to the generic inline row.
-  if (tool.status === "running" || !tool.preview) return <Inline tool={tool} />
+  if (tool.status === "running" || !tool.preview) return <Inline tool={tool} indent={indent} />
   return (
-    <InlineTool part={tool}>
+    <InlineTool part={tool} indent={indent}>
       <span bg={theme.accent} fg={theme.background}> changed {short(base(tool.preview), 48)} </span>
     </InlineTool>
   )
 })
 
-export const Tool = memo(({ tool, detail = "expanded" }: { tool: Part; detail?: DetailMode }) => {
+export const Tool = memo(({ tool, detail = "expanded", indent }: { tool: Part; detail?: DetailMode; indent?: number }) => {
   if (detail === "hidden" && tool.status !== "running") return null
   if (tool.trail || tool.name === "delegate_task") return <Subagent tool={tool} />
-  if (FILE.has(tool.name) || tool.diff || isDiff(tool.result)) return <FileEdit tool={tool} />
-  return <Inline tool={tool} />
+  if (FILE.has(tool.name) || tool.diff || isDiff(tool.result)) return <FileEdit tool={tool} indent={indent} />
+  return <Inline tool={tool} indent={indent} />
 })

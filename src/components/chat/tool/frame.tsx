@@ -23,6 +23,7 @@ type InlineProps = {
   /** True once enough input exists to show `children` instead of pending. */
   complete?: boolean
   iconColor?: RGBA
+  indent?: number
   onClick?: () => void
 }
 
@@ -42,7 +43,7 @@ export const InlineTool = memo((p: InlineProps) => {
   return (
     <box
       flexDirection="column"
-      paddingLeft={3}
+      paddingLeft={p.indent ?? 3}
       onMouseOver={p.onClick ? () => setHover(true) : undefined}
       onMouseOut={p.onClick ? () => setHover(false) : undefined}
       onMouseDown={p.onClick}

@@ -55,8 +55,13 @@ export const ThoughtInline = memo(({ parts }: { parts: Part[] }) => {
               ? <box key={p.key ?? `th-${i}`} minHeight={1} width="100%" flexShrink={0}>
                   <text fg={theme.textMuted} wrapMode="word">{p.content}</text>
                 </box>
-              : <box key={p.id || `t-${i}`} width="100%" flexShrink={0}>
-                  <Tool tool={p} detail={detail === "hidden" ? "hidden" : "collapsed"} />
+              : <box
+                  key={p.id || `t-${i}`}
+                  width="100%"
+                  flexShrink={0}
+                  marginTop={i > 0 && items[i - 1].type === "thinking" ? 1 : 0}
+                >
+                  <Tool tool={p} detail={detail === "hidden" ? "hidden" : "collapsed"} indent={0} />
                 </box>,
           )}
         </box>
