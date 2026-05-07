@@ -50,20 +50,29 @@ export const ThoughtInline = memo(({ parts }: { parts: Part[] }) => {
       </box>
       {open ? (
         <box flexDirection="column" marginTop={1}>
-          {items.map((p, i) =>
-            p.type === "thinking"
-              ? <box key={p.key ?? `th-${i}`} minHeight={1} width="100%" flexShrink={0}>
-                  <text fg={theme.textMuted} wrapMode="word">{p.content}</text>
-                </box>
-              : <box
-                  key={p.id || `t-${i}`}
-                  width="100%"
-                  flexShrink={0}
-                  marginTop={i > 0 && items[i - 1].type === "thinking" ? 1 : 0}
-                >
-                  <Tool tool={p} detail={detail === "hidden" ? "hidden" : "collapsed"} indent={0} />
-                </box>,
-          )}
+          {items.map((p, i) => {
+            const head = i === 0 || items[i - 1].type !== p.type
+            const top = i > 0 && head ? 1 : 0
+            const key = p.type === "thinking" ? p.key ?? `th-${i}` : p.id || `t-${i}`
+            return (
+              <box key={key} flexDirection="column" width="100%" flexShrink={0} marginTop={top}>
+                {head ? (
+                  <box height={1}>
+                    <text fg={theme.textMuted}>{p.type === "thinking" ? "Thinking" : "Tool calls"}</text>
+                  </box>
+                ) : null}
+                {p.type === "thinking" ? (
+                  <box minHeight={1} width="100%" flexShrink={0}>
+                    <text fg={theme.textMuted} wrapMode="word">{p.content}</text>
+                  </box>
+                ) : (
+                  <box width="100%" flexShrink={0}>
+                    <Tool tool={p} detail={detail === "hidden" ? "hidden" : "collapsed"} indent={0} />
+                  </box>
+                )}
+              </box>
+            )
+          })}
         </box>
       ) : null}
     </box>
